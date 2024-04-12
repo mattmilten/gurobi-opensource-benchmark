@@ -11,7 +11,7 @@ import pandas as pd
 import time
 
 
-def run_pythonmip(model: str, timelimit: int):
+def run_cbc(model: str, timelimit: int):
 
     m = mip.Model(solver_name=mip.CBC)
 
@@ -20,20 +20,8 @@ def run_pythonmip(model: str, timelimit: int):
     status = m.optimize(max_seconds=timelimit)
     end = time.time()
 
-    statuscodes = {
-        7: "CUTOFF",
-        1: "ERROR",
-        3: "FEASIBLE",
-        1: "INFEASIBLE",
-        4: "INT_INFEASIBLE",
-        6: "LOADED",
-        5: "NO_SOLUTION_FOUND",
-        0: "OPTIMAL",
-        2: "UNBOUNDED",
-    }
-
     return {
-        "solver": "Python-MIP",
+        "solver": "CBC",
         "time": end-start,
         "iterations": None,
         "nodes": None,
@@ -201,7 +189,7 @@ if __name__ == "__main__":
                     with tabs[4]:
                         output4 = st.empty()
                         with st_capture(output4.code):
-                            results_list.append(run_pythonmip(model.name, timelimit))
+                            results_list.append(run_cbc(model.name, timelimit))
                 with tabs[0]:
                     results = pd.DataFrame(results_list)
                     results.set_index("solver", inplace=True)
