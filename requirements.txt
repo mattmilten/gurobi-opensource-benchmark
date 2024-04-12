@@ -1,5 +1,5 @@
 gurobipy
-highspy
+highspy>=1.7.1.dev1
 pyscipopt
 mip
 pandas
