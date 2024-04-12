@@ -8,6 +8,7 @@ import highspy
 import pyscipopt
 import mip
 import pandas as pd
+import time
 
 
 def run_pythonmip(model: str, timelimit: int):
@@ -15,17 +16,30 @@ def run_pythonmip(model: str, timelimit: int):
     m = mip.Model(solver_name=mip.CBC)
 
     m.read(model)
-
+    start = time.time()
     status = m.optimize(max_seconds=timelimit)
+    end = time.time()
+
+    statuscodes = {
+        7: "CUTOFF",
+        1: "ERROR",
+        3: "FEASIBLE",
+        1: "INFEASIBLE",
+        4: "INT_INFEASIBLE",
+        6: "LOADED",
+        5: "NO_SOLUTION_FOUND",
+        0: "OPTIMAL",
+        2: "UNBOUNDED",
+    }
 
     return {
         "solver": "Python-MIP",
-        "time": m.getSolverTime(),
-        "iterations": m.getSimplexIterationCount(),
-        "nodes": m.getNodeCount(),
-        "gap": m.getGap(),
+        "time": end-start,
+        "iterations": None,
+        "nodes": None,
+        "gap": m.gap,
         "objective": m.objective_value,
-        "status": status,
+        "status": statuscodes[status],
     }
 
 
@@ -38,7 +52,7 @@ def run_highs(model: str, timelimit: int):
     h.setOptionValue("time_limit", timelimit)
     if os.path.exists("highs.log"):
         os.remove("highs.log")
-    h.setOptionValue('log_file', 'highs.log')
+    h.setOptionValue("log_file", "highs.log")
 
     h.run()
 
