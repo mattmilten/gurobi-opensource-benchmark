@@ -24,6 +24,7 @@ def run_pythonmip(model: str, timelimit: int):
         "iterations": m.getSimplexIterationCount(),
         "nodes": m.getNodeCount(),
         "gap": m.getGap(),
+        "objective": m.objective_value,
         "status": status,
     }
 
@@ -168,7 +169,7 @@ if __name__ == "__main__":
             submitted = st.form_submit_button("Run solvers")
             if submitted:
                 results_list = []
-                tabs = st.tabs(["Results", "Gurobi", "HiGHS", "SCIP"])
+                tabs = st.tabs(["Results", "Gurobi", "HiGHS", "SCIP", "CBC"])
                 with st.spinner("Optimizing..."):
                     with tabs[1]:
                         output1 = st.empty()
@@ -183,14 +184,17 @@ if __name__ == "__main__":
                         output3 = st.empty()
                         with st_capture(output3.code):
                             results_list.append(run_pyscipopt(model.name, timelimit))
-                # results_list.append(run_pythonmip(model, timelimit))
+                    with tabs[4]:
+                        output4 = st.empty()
+                        with st_capture(output4.code):
+                            results_list.append(run_pythonmip(model.name, timelimit))
                 with tabs[0]:
                     results = pd.DataFrame(results_list)
                     results.set_index("solver", inplace=True)
                     st.dataframe(results)
                     results.reset_index(inplace=True)
                     domain = results["solver"].tolist()
-                    range = ["#DD2113", "green", "#1E3AC5"]
+                    range = ["#DD2113", "green", "#1E3AC5", "#004746"]
                     chart = (
                         alt.Chart(results)
                         .mark_bar()
