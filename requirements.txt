@@ -1,0 +1,7 @@
+gurobipy
+highspy
+pyscipopt
+mip
+pandas
+streamlit
+altair
