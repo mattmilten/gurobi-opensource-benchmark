@@ -39,7 +39,7 @@ def run_pythonmip(model: str, timelimit: int):
         "nodes": None,
         "gap": m.gap,
         "objective": m.objective_value,
-        "status": statuscodes[status],
+        "status": status,
     }
 
 
