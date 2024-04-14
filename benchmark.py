@@ -22,7 +22,7 @@ def run_cbc(model: str, timelimit: int):
 
     return {
         "solver": "CBC",
-        "time": m.time,
+        "time": end-start,
         "iterations": None,
         "nodes": m.num_nodes,
         "gap": m.gap,
