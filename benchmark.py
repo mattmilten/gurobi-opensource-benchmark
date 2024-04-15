@@ -168,28 +168,34 @@ if __name__ == "__main__":
 
             st.write(f'File "{model.name}" has been uploaded successfully!')
             timelimit = st.slider("time limit in seconds", 1, 60)
-            submitted = st.form_submit_button("Run solvers")
+            solvers = st.multiselect("Select solvers to compare:", ["Gurobi", "HiGHS", "SCIP", "CBC"], ["Gurobi", "HiGHS", "SCIP", "CBC"])
+            submitted = st.form_submit_button("Run!")
             if submitted:
                 results_list = []
-                tabs = st.tabs(["Results", "Gurobi", "HiGHS", "SCIP", "CBC"])
+                tabs = st.tabs(["Results"] + solvers)
                 with st.spinner("Optimizing..."):
-                    with tabs[1]:
-                        output1 = st.empty()
-                        with st_capture(output1.code):
-                            results_list.append(run_gurobi(model.name, timelimit))
-                    with tabs[2]:
-                        results_list.append(run_highs(model.name, timelimit))
-                        with open("highs.log", "r") as f:
-                            highslog = f.read()
-                        st.code(highslog)
-                    with tabs[3]:
-                        output3 = st.empty()
-                        with st_capture(output3.code):
-                            results_list.append(run_pyscipopt(model.name, timelimit))
-                    with tabs[4]:
-                        output4 = st.empty()
-                        with st_capture(output4.code):
-                            results_list.append(run_cbc(model.name, timelimit))
+                    for i,s in enumerate(solvers):
+                        if s == "Gurobi":
+                            with tabs[i+1]:
+                                output1 = st.empty()
+                                with st_capture(output1.code):
+                                    results_list.append(run_gurobi(model.name, timelimit))
+                        if s == "HiGHS":
+                            with tabs[i+1]:
+                                results_list.append(run_highs(model.name, timelimit))
+                                with open("highs.log", "r") as f:
+                                    highslog = f.read()
+                                st.code(highslog)
+                        if s == "SCIP":
+                            with tabs[i+1]:
+                                output3 = st.empty()
+                                with st_capture(output3.code):
+                                    results_list.append(run_pyscipopt(model.name, timelimit))
+                        if s == "CBC":
+                            with tabs[i+1]:
+                                output4 = st.empty()
+                                with st_capture(output4.code):
+                                    results_list.append(run_cbc(model.name, timelimit))
                 with tabs[0]:
                     results = pd.DataFrame(results_list)
                     results.set_index("solver", inplace=True)
