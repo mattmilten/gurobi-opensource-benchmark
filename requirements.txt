@@ -1,7 +1,7 @@
 gurobipy
 highspy>=1.7.1.dev1
 pyscipopt
-mip
+mip>=1.16rc0
 pandas
 streamlit
 altair

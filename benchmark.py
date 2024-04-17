@@ -90,52 +90,53 @@ def run_pyscipopt(model: str, timelimit: int):
 
 def run_gurobi(model: str, timelimit: int):
 
-    m = gp.read(model)
+    with gp.Env() as env:
+        m = gp.read(model, env=env)
 
-    m.Params.TimeLimit = timelimit
+        m.Params.TimeLimit = timelimit
 
-    m.optimize()
+        m.optimize()
 
-    statuscodes = {
-        1: "LOADED",
-        2: "OPTIMAL",
-        3: "INFEASIBLE",
-        4: "INF_OR_UNBD",
-        5: "UNBOUNDED",
-        6: "CUTOFF",
-        7: "ITERATION_LIMIT",
-        8: "NODE_LIMIT",
-        9: "TIME_LIMIT",
-        10: "SOLUTION_LIMIT",
-        11: "INTERRUPTED",
-        12: "NUMERIC",
-        13: "SUBOPTIMAL",
-        14: "INPROGRESS",
-        15: "USER_OBJ_LIMIT",
-        16: "WORK_LIMIT",
-        17: "MEM_LIMIT",
-    }
+        statuscodes = {
+            1: "LOADED",
+            2: "OPTIMAL",
+            3: "INFEASIBLE",
+            4: "INF_OR_UNBD",
+            5: "UNBOUNDED",
+            6: "CUTOFF",
+            7: "ITERATION_LIMIT",
+            8: "NODE_LIMIT",
+            9: "TIME_LIMIT",
+            10: "SOLUTION_LIMIT",
+            11: "INTERRUPTED",
+            12: "NUMERIC",
+            13: "SUBOPTIMAL",
+            14: "INPROGRESS",
+            15: "USER_OBJ_LIMIT",
+            16: "WORK_LIMIT",
+            17: "MEM_LIMIT",
+        }
 
-    try:
-        gap = m.MIPGap
-    except:
-        gap = None
+        try:
+            gap = m.MIPGap
+        except:
+            gap = None
 
-    try:
-        objval = m.ObjVal
-    except:
-        objval = None
+        try:
+            objval = m.ObjVal
+        except:
+            objval = None
 
-    version = gp.gurobi.version()
+        version = gp.gurobi.version()
 
-    return {
-        "solver": f"Gurobi {version[0]}.{version[1]}.{version[2]}",
-        "iterations": m.IterCount,
-        "nodes": m.NodeCount,
-        "objective": objval,
-        "gap": gap,
-        "time": m.Runtime,
-        "status": statuscodes[m.Status],
+        return {
+            "solver": f"Gurobi {version[0]}.{version[1]}.{version[2]}",
+            "iterations": m.IterCount,
+            "nodes": m.NodeCount,
+            "objective": objval,
+            "gap": gap,
+            "time": m.Runtime,
+            "status": statuscodes[m.Status],
     }
 
 
@@ -167,53 +168,58 @@ if __name__ == "__main__":
                 f.write(model.getvalue())
 
             st.write(f'File "{model.name}" has been uploaded successfully!')
-            timelimit = st.slider("time limit in seconds", 1, 60)
-            solvers = st.multiselect("Select solvers to compare:", ["Gurobi", "HiGHS", "SCIP", "CBC"], ["Gurobi", "HiGHS", "SCIP", "CBC"])
-            submitted = st.form_submit_button("Run!")
-            if submitted:
-                results_list = []
-                tabs = st.tabs(["Results"] + solvers)
-                with st.spinner("Optimizing..."):
-                    for i,s in enumerate(solvers):
-                        if s == "Gurobi":
-                            with tabs[i+1]:
-                                output1 = st.empty()
-                                with st_capture(output1.code):
-                                    results_list.append(run_gurobi(model.name, timelimit))
-                        if s == "HiGHS":
-                            with tabs[i+1]:
-                                results_list.append(run_highs(model.name, timelimit))
-                                with open("highs.log", "r") as f:
-                                    highslog = f.read()
-                                st.code(highslog)
-                        if s == "SCIP":
-                            with tabs[i+1]:
-                                output3 = st.empty()
-                                with st_capture(output3.code):
-                                    results_list.append(run_pyscipopt(model.name, timelimit))
-                        if s == "CBC":
-                            with tabs[i+1]:
-                                output4 = st.empty()
-                                with st_capture(output4.code):
-                                    results_list.append(run_cbc(model.name, timelimit))
-                with tabs[0]:
-                    results = pd.DataFrame(results_list)
-                    results.set_index("solver", inplace=True)
-                    st.dataframe(results)
-                    results.reset_index(inplace=True)
-                    domain = results["solver"].tolist()
-                    range = ["#DD2113", "green", "#1E3AC5", "#004746"]
-                    chart = (
-                        alt.Chart(results)
-                        .mark_bar()
-                        .encode(
-                            x="time",
-                            y="solver",
-                            color=alt.Color(
-                                "solver",
-                                scale=alt.Scale(domain=domain, range=range),
-                                title="solver",
-                            ),
-                        )
+        
+        timelimit = st.slider("time limit in seconds", 1, 60)
+        solvers = st.multiselect("Select solvers to compare:", ["Gurobi", "HiGHS", "SCIP", "CBC"], ["Gurobi", "HiGHS", "SCIP", "CBC"])
+        submitted = st.form_submit_button("Run!")
+        tabs = st.tabs(["Results"] + solvers)
+        if submitted:
+            results_list = []
+            progress_bar = st.progress(0, "Progress")
+            progress_bar.progress(0)
+            with st.spinner("Optimizing..."):
+                for i,s in enumerate(solvers):
+                    progress_bar.progress((i)/len(solvers))
+                    if s == "Gurobi":
+                        with tabs[i+1]:
+                            output1 = st.empty()
+                            with st_capture(output1.code):
+                                results_list.append(run_gurobi(model.name, timelimit))
+                    if s == "HiGHS":
+                        with tabs[i+1]:
+                            results_list.append(run_highs(model.name, timelimit))
+                            with open("highs.log", "r") as f:
+                                highslog = f.read()
+                            st.code(highslog)
+                    if s == "SCIP":
+                        with tabs[i+1]:
+                            output3 = st.empty()
+                            with st_capture(output3.code):
+                                results_list.append(run_pyscipopt(model.name, timelimit))
+                    if s == "CBC":
+                        with tabs[i+1]:
+                            output4 = st.empty()
+                            with st_capture(output4.code):
+                                results_list.append(run_cbc(model.name, timelimit))
+            progress_bar.empty()
+            with tabs[0]:
+                results = pd.DataFrame(results_list)
+                results.set_index("solver", inplace=True)
+                st.dataframe(results)
+                results.reset_index(inplace=True)
+                domain = results["solver"].tolist()
+                range = ["#DD2113", "green", "#1E3AC5", "#004746"]
+                chart = (
+                    alt.Chart(results)
+                    .mark_bar()
+                    .encode(
+                        x="time",
+                        y="solver",
+                        color=alt.Color(
+                            "solver",
+                            scale=alt.Scale(domain=domain, range=range),
+                            title="solver",
+                        ),
                     )
-                    st.altair_chart(chart)
+                )
+                st.altair_chart(chart)
