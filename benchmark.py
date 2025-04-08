@@ -27,7 +27,7 @@ def run_cbc(model: str, timelimit: int):
         "nodes": None,
         "gap": m.gap,
         "objective": m.objective_value,
-        "status": status,
+        "status": str(status).replace("OptimizationStatus.", "").lower()
     }
 
 
@@ -57,7 +57,7 @@ def run_highs(model: str, timelimit: int):
         "nodes": info.mip_node_count,
         "gap": info.mip_gap,
         "objective": info.objective_function_value,
-        "status": h.modelStatusToString(h.getModelStatus()),
+        "status": h.modelStatusToString(h.getModelStatus()).lower(),
     }
 
 
@@ -84,7 +84,7 @@ def run_pyscipopt(model: str, timelimit: int):
         "nodes": m.getNNodes(),
         "gap": m.getGap(),
         "objective": objval,
-        "status": m.getStatus(),
+        "status": m.getStatus().lower(),
     }
 
 
@@ -136,7 +136,7 @@ def run_gurobi(model: str, timelimit: int):
             "objective": objval,
             "gap": gap,
             "time": m.Runtime,
-            "status": statuscodes[m.Status],
+            "status": statuscodes[m.Status].lower(),
     }
 
 
@@ -205,19 +205,28 @@ if __name__ == "__main__":
             with tabs[0]:
                 results = pd.DataFrame(results_list)
                 results.set_index("solver", inplace=True)
+                results["time"] = results["time"].round(2)
                 st.dataframe(results)
                 results.reset_index(inplace=True)
-                domain = results["solver"].tolist()
-                range = ["#DD2113", "green", "#1E3AC5", "#004746"]
+                solvers = results["solver"].tolist()
+                colors = ["#DD2113", "#81918E", "#1E3AC5", "#004746"]
                 chart = (
                     alt.Chart(results)
                     .mark_bar()
                     .encode(
-                        x="time",
-                        y="solver",
+                        x=alt.X(
+                            "time",
+                            scale=alt.Scale(domain=(0, max(results["time"].max(),1))),  # Set minimum x-range to 1 second
+                            title="time (seconds)"
+                        ),
+                        y=alt.Y(
+                            "solver",
+                            sort=solvers,  # Ensure the y-axis follows the order of the solver list
+                            title="solver",
+                        ),
                         color=alt.Color(
                             "solver",
-                            scale=alt.Scale(domain=domain, range=range),
+                            scale=alt.Scale(domain=solvers, range=colors),
                             title="solver",
                         ),
                     )
